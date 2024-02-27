@@ -15,23 +15,19 @@
 
 .. class:: center
 
-    :Название исследуемой задачи: Мое название работы
-    :Тип научной работы: M1P/НИР/CoIS
-    :Автор: Имя Отчество Фамилия
+    :Название исследуемой задачи: Декодирование сигналов головного мозга в аудиоданные
+    :Тип научной работы: M1P
+    :Автор: Набиев Мухаммадшариф Фуркатович
     :Научный руководитель: степень, Фамилия Имя Отчество
     :Научный консультант(при наличии): степень, Фамилия Имя Отчество
 
 Abstract
 ========
 
-Purus sit amet luctus venenatis lectus magna fringilla. Condimentum id venenatis a condimentum vitae sapien. Auctor neque vitae tempus quam pellentesque nec nam aliquam. Eget egestas purus viverra accumsan in. Nam aliquam sem et tortor. Donec et odio pellentesque diam volutpat commodo. Odio pellentesque diam volutpat commodo sed egestas. Sit amet dictum sit amet justo. Pellentesque sit amet porttitor eget. Imperdiet sed euismod nisi porta lorem mollis aliquam ut. Quis varius quam quisque id diam vel quam elementum. Ornare lectus sit amet est placerat in. Vulputate dignissim suspendisse in est ante. Elit sed vulputate mi sit amet mauris. Egestas sed tempus urna et pharetra pharetra. Viverra tellus in hac habitasse platea dictumst vestibulum rhoncus.
+В данной статье исследуется проблема декодирования сигналов головного мозга в аудиоданные с использованием современных методов получения эмбеддингов аудиоданных. Мы обращаемся к методу Wav2vec для извлечения высококачественных представлений аудиоинформации из сигналов электроэнцефалограммы (ЭЭГ). Эти методы позволяют нам не только решать задачи классификации и регрессии в контексте аудиоданных, но и представляют новые возможности для улучшения качества декодирования сигналов мозга. Полученные результаты имеют важное значение для развития интерфейсов мозг-компьютер и глубокого понимания принципов аудиальной обработки информации человеческим мозгом. Для достижения этой цели используется датасет, собранный Левёнским университетом. Датасет состоит из 668 пар ЭЭГ-стимул общей продолжительностью 9431 минута. 
 
 Research publications
 ===============================
-1. 
-
-Presentations at conferences on the topic of research
-================================================
 1. 
 
 Software modules developed as part of the study
