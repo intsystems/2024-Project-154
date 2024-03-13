@@ -4,6 +4,7 @@ import json
 import logging
 import os, sys
 import tensorflow as tf
+import keras
 
 import sys
 
@@ -35,7 +36,9 @@ def evaluate_model(model, test_dict):
         logging.info(f"Scores for subject {subject}:")
         results = model.evaluate(ds_test, verbose=2)
         metrics = model.metrics_names
+        # results[1] = results[1].numpy()[0]
         evaluation[subject] = dict(zip(metrics, results))
+        # print(results)
     return evaluation
 
 
@@ -49,7 +52,7 @@ if __name__ == "__main__":
     # Hop length between two consecutive decision windows
     hop_length = 64
 
-    epochs = 5
+    epochs = 2
     patience = 5
     batch_size = 16
     only_evaluate = False
@@ -166,5 +169,6 @@ if __name__ == "__main__":
             # We can save our results in a json encoded file
             results_path = os.path.join(results_folder, results_filename)
             with open(results_path, "w") as fp:
+                # print(evaluation)
                 json.dump(evaluation, fp)
             logging.info(f"Results saved at {results_path}")
