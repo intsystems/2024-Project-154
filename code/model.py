@@ -15,12 +15,14 @@ class TransformerBlock(tf.keras.layers.Layer):
         super(TransformerBlock, self).build(input_shape)
 
     def call(self, inputs):
-        attn_output = self.att(inputs, inputs)
-        attn_output = self.dropout1(attn_output)
-        out1 = self.layernorm1(inputs + attn_output)
-        ffn_output = self.ffn(out1)  
-        ffn_output = self.dropout2(ffn_output)
-        out = self.layernorm2(out1 + ffn_output)
+        attn_output = self.att(inputs, inputs) 
+        attn_output = self.dropout1(attn_output) 
+        out1 = self.layernorm1(inputs + attn_output) 
+        print(out1.shape)
+        ffn_output = self.ffn(out1) 
+        print(ffn_output.shape)
+        ffn_output = self.dropout2(ffn_output) 
+        out = self.layernorm2(out1 + ffn_output) 
         return out
 
 
@@ -105,7 +107,7 @@ def Model(
 
     transformer_block = TransformerBlock(embed_dim=eeg_input_dimension, num_heads=2, ff_dim=32)
     eeg_proj_1 = transformer_block(eeg)
-
+    print(eeg_proj_1.shape)
 
     # Construct dilation layers
     for layer_index in range(layers):

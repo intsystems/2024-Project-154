@@ -1,132 +1,150 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-'''
-The :mod:`mylib.train` contains classes:
+import os
 
-- :class:`mylib.train.Trainer`
+import torch
+from torch.utils.tensorboard import SummaryWriter
+import torch.nn as nn
 
-The :mod:`mylib.train` contains functions:
-
-- :func:`mylib.train.cv_parameters`
-'''
-from __future__ import print_function
-
-__docformat__ = 'restructuredtext'
-
-import numpy
-from scipy.special import expit
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+from src.mylib.utils.data import TaskDataset
 from sklearn.metrics import classification_report
-
-class SyntheticBernuliDataset(object):
-    r'''Base class for synthetic dataset.'''
-    def __init__(self, n=10, m=100, seed=42):
-        r'''Constructor method
-
-        :param n: the number of feature
-        :type n: int
-        :param m: the number of object
-        :type m: int
-        :param seed: seed for random state.
-        :type seed: int
-        '''
-        rs = numpy.random.RandomState(seed)
-
-        self.w = rs.randn(n) # Генерим вектор параметров из нормального распределения
-        self.X = rs.randn(m, n) # Генерим вектора признаков из нормального распределения
-
-        self.y = rs.binomial(1, expit(self.X@self.w)) # Гипотеза порождения данных - целевая переменная из схемы Бернули
 
 
 class Trainer(object):
-    r'''Base class for all trainer.'''
-    def __init__(self, model, X, Y, seed=42):
-        r'''Constructor method
+    r"""Base class for all trainer."""
 
-        :param model: The class with fit and predict methods.
-        :type model: object
+    def __init__(self, model, train_files, val_files, test_files, args, optimizer, loss_fn):
+        r"""Constructor method
 
-        :param X: The array of shape 
-            `num_elements` :math:`\times` `num_feature`.
-        :type X: numpy.array
-        :param Y: The array of shape 
-            `num_elements` :math:`\times` `num_answers`.
-        :type Y: numpy.array
+        :param train_files: path to train files
+        :type train_files: list
 
-        :param seed: Seed for random state.
-        :type seed: int
-        '''
-        self.model = model
-        self.seed = seed
-        (
-            self.X_train, 
-            self.X_val, 
-            self.Y_train, 
-            self.Y_val
-        ) = train_test_split(X, Y, random_state=self.seed)
+        :param val_files: path to val files
+        :type val_files: list
 
-    def train(self):
-        r''' Train model
-        '''
-        self.model.fit(self.X_train, self.Y_train)
-
-    def eval(self, output_dict=False):
-        r'''Evaluate model for initial validadtion dataset.
-        '''
-        return classification_report(
-            self.Y_val, 
-            self.model.predict(
-                self.X_val), output_dict=output_dict)
-
-    def test(self, X, Y, output_dict=False):
-        r"""Evaluate model for given dataset.
-        
-        :param X: The array of shape 
-            `num_elements` :math:`\times` `num_feature`.
-        :type X: numpy.array
-        :param Y: The array of shape 
-            `num_elements` :math:`\times` `num_answers`.
-        :type Y: numpy.array
+        :param test_files: path to test files
+        :type test_files: list
         """
-        return classification_report(
-            Y, self.model.predict(X), output_dict=output_dict)
+        self.model = model
+        self.args = args
+        self.optimizer = optimizer
+        self.loss_fn = loss_fn
+        self.test_files = test_files
+        self.initialize_dataloaders(train_files, val_files, test_files)
 
+    def initialize_dataloaders(self, train_files, val_files, test_files):
+        r"""Initialize dataloaders"""
 
-def cv_parameters(X, Y, seed=42, minimal=0.1, maximum=25, count=100):
-    r'''Function for the experiment with different regularisation parameters 
-        and return accuracy and weidth for LogisticRegression for each parameter.
+        conf = {"window_length": self.args["window_length"], "hop_length": self.args["hop_length"],
+                "number_of_mismatch": self.args["number_of_mismatch"], "max_files": self.args["max_files"]}
+        self.train_dataloader = torch.utils.data.DataLoader(TaskDataset(train_files, **conf),
+                                                            batch_size=self.args["batch_size"])
+        self.val_dataloader = torch.utils.data.DataLoader(TaskDataset(val_files, **conf),
+                                                          batch_size=self.args["batch_size"])
+        self.test_dataloader = torch.utils.data.DataLoader(TaskDataset(test_files, **conf),
+                                                           batch_size=1)
 
-    :param X: The array of shape 
-        `num_elements` :math:`\times` `num_feature`.
-    :type X: numpy.array
-    :param Y: The array of shape 
-        `num_elements` :math:`\times` `num_answers`.
-    :type Y: numpy.array
+    def train_one_epoch(self, epoch_index, writer):
+        r"""Train one epoch"""
 
-    :param seed: Seed for random state.
-    :type seed: int
-    :param minimal: Minimum value for the Cs linspace.
-    :type minimal: int
-    :param maximum: Maximum value for the Cs linspace.
-    :type maximum: int
-    :param count: Number of the Cs points.
-    :type count: int
-    '''
+        running_loss = 0
+        last_loss = 0
 
-    Cs = numpy.linspace(minimal, maximum, count)
-    parameters = []
-    accuracy = []
-    for C in Cs:
-        trainer = Trainer(
-            LogisticRegression(penalty='l1', solver='saga', C=1/C),
-            X, Y,
-        )
+        for i, data in enumerate(self.train_dataloader):
+            inputs, labels = data
 
-        trainer.train()
+            self.optimizer.zero_grad()
+            outputs = self.model(inputs[0], inputs[1:])
 
-        accuracy.append(trainer.eval(output_dict=True)['accuracy'])
-        
-        parameters.extend(trainer.model.coef_)
+            # TODO: CLASSIFICATION METRIC DURING TRAINING
+            # probs = (torch.nn.functional.softmax(outputs.data, dim=1) >= 0.5)
+            # _, predicted = torch.max(probs.data, 1)
 
-    return Cs, accuracy, parameters
+            loss = self.loss_fn(outputs, labels)
+            loss.backward()
+
+            self.optimizer.step()
+
+            running_loss += loss.item()
+            if i % 100 == 99:
+                last_loss = running_loss / 100
+                print('  batch {} loss: {}'.format(i + 1, last_loss))
+                x = epoch_index * len(self.train_dataloader) + i + 1
+                writer.add_scalar('Loss/train', last_loss, x)
+                running_loss = 0
+
+        return last_loss
+
+    def train_model(self, epochs, run_name):
+        r""" Train models"""
+
+        writer = SummaryWriter(f"runs/{run_name}_{self.model.__class__.__name__}")
+
+        best_vloss = 1_000_000
+        if not os.path.isdir("saved_models"):
+            os.makedirs("saved_models")
+
+        for epoch in range(epochs):
+            print(f"EPOCH {epoch + 1}:")
+            self.model.train()
+            avg_loss = self.train_one_epoch(epoch + 1, writer)
+
+            running_vloss = 0.0
+            self.model.eval()
+            with torch.no_grad():
+                for i, vdata in enumerate(self.val_dataloader):
+                    vinputs, vlabels = vdata
+                    voutputs = self.model(vinputs[0], vinputs[1:])
+                    vloss = self.loss_fn(voutputs, vlabels)
+                    running_vloss += vloss.item()
+
+            avg_vloss = running_vloss / (i + 1)
+            print("LOSS train {} valid {}".format(avg_loss, avg_vloss))
+
+            writer.add_scalars("Training vs. Validation Loss",
+                               {"Training": avg_loss, "Validation": avg_vloss},
+                               epoch + 1)
+            writer.flush()
+
+            if avg_vloss < best_vloss:
+                best_vloss = avg_vloss
+                model_path = f"saved_models/{self.model.__class__.__name__}_{epoch}"
+                torch.save(self.model.state_dict(), model_path)
+
+    def eval(self):
+        r"""Evaluate model for initial validation dataset."""
+        pass
+
+    def test(self):
+        r"""Evaluate model for given dataset"""
+
+        total = 0
+        self.model.eval()
+        y_pred = []
+        y_true = []
+        subjects = list(set([os.path.basename(x).split("_-_")[1] for x in self.test_files]))
+        loss_fn = nn.functional.cross_entropy
+        with torch.no_grad():
+            for sub in subjects:
+                sub_test_files = [f for f in self.test_files if sub in os.path.basename(f)]
+                test_dataloader = torch.utils.data.DataLoader(TaskDataset(sub_test_files, self.args["window_length"], self.args["hop_length"]))
+                loss = 0
+                correct = 0
+                for inputs, label in test_dataloader:
+                    outputs = self.model(inputs[0], inputs[1:])
+
+                    loss += loss_fn(outputs, label).item()
+                    probs = (torch.nn.functional.softmax(outputs.data, dim=1) >= 0.5)
+                    _, predicted = torch.max()
+
+            for data in self.test_dataloader:
+                inputs, labels = data
+
+                outputs = self.model(inputs[0], inputs[1:])
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+
+                y_pred.extend(predicted.tolist())
+                y_true.extend(labels.tolist())
+
+                correct += (predicted == labels).sum().item()
+
+        return classification_report(y_true, y_pred)
