@@ -9,7 +9,7 @@ class TaskDataset(Dataset):
     """Generate data for the Match/Mismatch task."""
 
     def __init__(self, files, window_length, hop_length, number_of_mismatch, max_files=100):
-        self.labels = []
+        self.labels = dict()
         assert number_of_mismatch != 0
         self.window_length = window_length
         self.hop_length = hop_length
@@ -27,7 +27,7 @@ class TaskDataset(Dataset):
 
         for recording_name, feature_paths in grouped:
             sub_recordings = sorted(feature_paths, key=lambda x: "0" if x == "eeg" else x)
-            eeg, envelope = np.load(sub_recordings[0]), np.load(sub_recordings[1]) # eeg [L, C], env [L, 1]
+            eeg, envelope = np.load(sub_recordings[0]), np.load(sub_recordings[1])  # eeg [L, C], env [L, 1]
             new_files += [[torch.tensor(eeg.T).float(), torch.tensor(envelope.T).float()]]
 
             if self.max_files is not None and len(new_files) == self.max_files:
@@ -56,13 +56,14 @@ class TaskDataset(Dataset):
                 self.files[i].append(t)
 
     def create_labels_randomize_positions(self):
+        roll = lambda x, n: x[-n % len(x):] + x[: -n % len(x)]
         for i in range(len(self.files)):
-            idx_permutation = torch.randperm(self.number_of_mismatch + 1) + 1
-            permuted = []
-            for idx in idx_permutation:
-                permuted.append(self.files[i][idx])
-            self.files[i][1:] = permuted
-            self.labels.append(torch.argmax((idx_permutation == 1).long()))
+            self.labels[i] = torch.tensor(0)
+            for j in range(1, self.number_of_mismatch + 1):
+                envs = self.files[i][1:]
+                rolled_envs = roll(envs, j)
+                self.files.append([self.files[i][0], *rolled_envs])
+                self.labels[len(self.files) - 1] = torch.tensor(j)
 
     def __len__(self):
         return len(self.files)
