@@ -4,5 +4,5 @@
   "preprocessed_eeg_folder": "preprocessed_eeg",
   "preprocessed_stimuli_folder": "preprocessed_stimuli",
   "split_folder": "split_data",
-  "stimuli": "stimuli"
+  "stimuli": "stimuli/eeg"
 }
