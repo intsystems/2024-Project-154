@@ -1,8 +1,7 @@
 import torch.nn as nn
 
-
 class BaselineStimulusEncoder(nn.Module):
-    """Stimulus encoder from baseline solution"""
+    """Энкодер стимула взятый из базового решения"""
 
     def __init__(self, dilation_filters=16, kernel_size=3, layers=3):
         super(BaselineStimulusEncoder, self).__init__()
@@ -20,3 +19,17 @@ class BaselineStimulusEncoder(nn.Module):
 
     def forward(self, stimulus):
         return self.env_convos(stimulus)
+
+class PhysicsInformedStimulusEncoder(nn.Module):
+    """Физико-информированный энкодер для стимула"""
+
+    def __init__(self, *args, **kwargs):
+        super(PhysicsInformedStimulusEncoder, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3, bias=True),
+            nn.ReLU()
+        )
+
+
+    def forward(self, embedding):
+        return self.encoder(embedding)

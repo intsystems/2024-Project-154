@@ -106,7 +106,6 @@ venv.bak/
 .mypy_cache/
 
 # Exclude __pycache__ :
-__pycache__/
 # Exclude .gitignore:
 .gitignore
 # Exclude folders with name logs:
@@ -124,3 +123,4 @@ logs/
 /code/runs/
 /code/saved_models/
 /code/embeddings/
+/code/testing_embeddings.py
