@@ -71,7 +71,7 @@ for asr_model_name in ["Clementapa/wav2vec2-base-960h-phoneme-reco-dutch", "open
                 elif "whisper" in asr_model_name:
                     output = asr_model(i.input_features,
                                        decoder_input_ids=torch.tensor(
-                                           [[1, 1]], device=device) * asr_model.config.decoder_start_token_id)
+                                           [[1] * 10], device=device) * asr_model.config.decoder_start_token_id)
             embed.append(output.last_hidden_state.cpu().numpy())
         embed = np.concatenate(embed, axis=1)
         np.save(os.path.join(path_asr_embedds, os.path.basename(audio)), embed)

@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -12,7 +13,7 @@ from sklearn.metrics import classification_report
 class Trainer(object):
     r"""Base class for all trainer."""
 
-    def __init__(self, model, train_files, val_files, test_files, args, optimizer):
+    def __init__(self, model, train_files, val_files, test_files, args, optimizer, use_embeddings=False, embedding_type=None):
         r"""Constructor method
 
         :param train_files: path to train files
@@ -29,13 +30,16 @@ class Trainer(object):
         self.optimizer = optimizer
         self.loss_fn = nn.CrossEntropyLoss()
         self.test_files = test_files
+        self.use_embeddings = use_embeddings
+        self.embedding_type = embedding_type
         self.initialize_dataloaders(train_files, val_files)
 
     def initialize_dataloaders(self, train_files, val_files):
         r"""Initialize dataloaders"""
 
         conf = {"window_length": self.args["window_length"], "hop_length": self.args["hop_length"],
-                "number_of_mismatch": self.args["number_of_mismatch"], "max_files": self.args["max_files"]}
+                "number_of_mismatch": self.args["number_of_mismatch"], "max_files": self.args["max_files"],
+                "use_embeddings": self.use_embeddings, "embedding_type": self.embedding_type}
         self.train_dataloader = torch.utils.data.DataLoader(TaskDataset(train_files, **conf),
                                                             batch_size=self.args["batch_size"])
         self.val_dataloader = torch.utils.data.DataLoader(TaskDataset(val_files, **conf),
@@ -46,12 +50,11 @@ class Trainer(object):
 
         running_loss = 0
         last_loss = 0
-
         for i, data in enumerate(self.train_dataloader):
             inputs, labels = data
 
             self.optimizer.zero_grad()
-            outputs = self.model(inputs[0], inputs[1:])
+            outputs = self.model(inputs)
             loss = self.loss_fn(outputs, labels)
             loss.backward()
 
@@ -64,8 +67,6 @@ class Trainer(object):
                 print('  batch {} loss: {}'.format(i + 1, last_loss))
                 x = epoch_index * len(self.train_dataloader) + i + 1
                 writer.add_scalar('Loss/train', last_loss, x)
-                if last_loss < eps:
-                    return last_loss
                 running_loss = 0
 
         return last_loss
@@ -89,7 +90,7 @@ class Trainer(object):
             with torch.no_grad():
                 for i, vdata in enumerate(self.val_dataloader):
                     vinputs, vlabels = vdata
-                    voutputs = self.model(vinputs[0], vinputs[1:])
+                    voutputs = self.model(vinputs)
                     vloss = self.loss_fn(voutputs, vlabels)
                     running_vloss += vloss.item()
 
@@ -103,11 +104,11 @@ class Trainer(object):
 
             if avg_vloss < best_vloss:
                 best_vloss = avg_vloss
-                model_path = f"saved_models/{self.model.__class__.__name__}_{epoch}"
+                model_path = f"saved_models/{run_name}_{epoch}"
                 torch.save(self.model.state_dict(), model_path)
 
-            if avg_vloss < eps:
-                break
+            # if avg_vloss < eps:
+                # break
 
     def eval_model(self, dataset_type):
         r"""Evaluate model for initial validation dataset."""
@@ -117,9 +118,8 @@ class Trainer(object):
     def test(self, window_length, hop_length, number_of_mismatch, max_files):
         r"""Evaluate model for given dataset"""
 
-        y_pred = []
-        y_true = []
         subjects = list(set([os.path.basename(x).split("_-_")[1] for x in self.test_files]))
+        accuracy_per_sub = []
         self.model.eval()
         with torch.no_grad():
             for sub in subjects:
@@ -131,12 +131,11 @@ class Trainer(object):
                 loss = 0
                 correct = 0
                 for inputs, label in test_dataloader:
-                    outputs = self.model(inputs[0], inputs[1:])
+                    outputs = self.model(inputs)
                     loss += F.cross_entropy(outputs, label).item()
                     _, predicted = torch.max(outputs.data, 1)
                     correct += (predicted == label).long().item()
-                    y_pred.extend(predicted.tolist())
-                    y_true.extend(label.tolist())
 
                 print(f"    Mean accuracy per subject: {100 * correct / len(test_dataloader)}")
-        print(classification_report(y_true, y_pred))
+                accuracy_per_sub.append(100 * correct / len(test_dataloader))
+        print("Score: ", np.mean(accuracy_per_sub))
