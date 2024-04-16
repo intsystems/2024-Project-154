@@ -12,17 +12,6 @@ class Trainer(object):
     r"""Base class for all trainer."""
 
     def __init__(self, model, train_files, val_files, test_files, args, optimizer, use_embeddings=False, embedding_type=None):
-        r"""Constructor method
-
-        :param train_files: path to train files
-        :type train_files: list
-
-        :param val_files: path to val files
-        :type val_files: list
-
-        :param test_files: path to test files
-        :type test_files: list
-        """
         self.model = model
         self.args = args
         self.optimizer = optimizer
