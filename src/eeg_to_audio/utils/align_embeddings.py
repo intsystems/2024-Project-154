@@ -9,17 +9,16 @@ from tqdm import tqdm
 file = os.path.abspath('')
 experiment_folder = os.path.dirname(file)
 
-# Load the config file
-with open(os.path.join(file, "src/mylib/utils/config.json")) as file_path:
+with open(os.path.join(file, "src/eeg_to_audio/utils/config.json")) as file_path:
     config = json.load(file_path)
 
-# Path to the dataset, which is already split to train, val, test
+# Путь к набору данных, который уже разделен на train, test
 data_folder = os.path.join(config["dataset_folder"], config['derivatives_folder'], config["preprocessed_stimuli_folder"])
 
 train_files = [x for x in glob.glob(os.path.join(data_folder, "*.npy"))]
 
-# resampling wav2vec embeddings
-print("Resampling Wav2Vec embeddings")
+# Изменение частоты дискретизации для эмбеддингов wav2vec2
+print("Изменение частоты дискретизации для эмбеддингов Wav2Vec2")
 path_to_embedds = os.path.join(file, "code/embeddings/wav2vec_resampled")
 os.makedirs(path_to_embedds, exist_ok=True)
 
@@ -44,8 +43,8 @@ for p in tqdm(pairs):
     print(stimul.shape, resampled.shape)
     np.save(os.path.join(path_to_embedds, f"{audio_name}_resampled"), resampled)
 
-# resampling whisper embeddings
-print("Resampling Whisper embeddings")
+# Изменение частоты дискретизации для эмбеддингов whisper
+print("Изменение частоты дискретизации для эмбеддингов Whisper")
 
 path_to_embedds = os.path.join(file, "code/embeddings/whisper_resampled")
 os.makedirs(path_to_embedds, exist_ok=True)

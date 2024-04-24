@@ -6,7 +6,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.mylib.utils.data import TaskDataset
+from src.eeg_to_audio.utils.data import TaskDataset
 
 class Trainer(object):
     r"""Base class for all trainer."""

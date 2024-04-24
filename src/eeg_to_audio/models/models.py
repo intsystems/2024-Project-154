@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from src.mylib.models.eeg_encoders import BaselineEEGEncoder, MultiheadAttentionEEGEncoder
-from src.mylib.models.stimulus_encoders import BaselineStimulusEncoder, PhysicsInformedStimulusEncoder
+from src.eeg_to_audio.models.eeg_encoders import BaselineEEGEncoder, TransformerBlockEEGEncoder
+from src.eeg_to_audio.models.stimulus_encoders import BaselineStimulusEncoder, PhysicsInformedStimulusEncoder
 
 
 class Model(nn.Module):
@@ -20,10 +20,9 @@ class Model(nn.Module):
         self.use_transformer = use_transformer
         self.use_embeddings = use_embeddings
 
-
         # Пространственное преобразование ЭЭГ + Энкодер ЭЭГ
         if use_transformer:
-            self.spatial_transformation = MultiheadAttentionEEGEncoder(embed_dim=64, ff_dim=32)
+            self.spatial_transformation = TransformerBlockEEGEncoder(embed_dim=64, ff_dim=32)
             self.eeg_encoder = BaselineEEGEncoder(in_channels=64, **args)
         else:
             self.spatial_transformation = nn.Conv1d(
@@ -57,8 +56,7 @@ class Model(nn.Module):
         # Общие веса для всех стимулов
         for i in range(len(stimuli)):
             stimuli[i] = self.stimulus_encoder(stimuli[i])
-            stimuli[i] = stimuli[i][:,:, :eeg.shape[-1]]
-            
+            stimuli[i] = stimuli[i][:, :, :eeg.shape[-1]]
 
         cosine_sim = []
         for stimulus in stimuli:

@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 class BaselineEEGEncoder(nn.Module):
-    """Encoder for EEG"""
+    """Базовый энкодер для ЭЭГ из базового решения"""
 
     def __init__(self, in_channels=8, dilation_filters=16, kernel_size=3, layers=3):
         super(BaselineEEGEncoder, self).__init__()
@@ -24,11 +24,11 @@ class BaselineEEGEncoder(nn.Module):
         return self.eeg_convos(eeg)
 
 
-class MultiheadAttentionEEGEncoder(nn.Module):
-    """EEG Encoder using transformer"""
+class TransformerBlockEEGEncoder(nn.Module):
+    """Трансформер-кодировщик"""
 
     def __init__(self, embed_dim, ff_dim):
-        super(MultiheadAttentionEEGEncoder, self).__init__()
+        super(TransformerBlockEEGEncoder, self).__init__()
 
         self.mha_attention = nn.MultiheadAttention(embed_dim=embed_dim, num_heads=2)
         self.ffn = nn.Sequential(nn.Linear(embed_dim, ff_dim), nn.ReLU(), nn.Linear(ff_dim, embed_dim))
