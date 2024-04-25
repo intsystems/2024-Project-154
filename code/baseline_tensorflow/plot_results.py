@@ -14,7 +14,7 @@ from sklearn import base
 # generate plots from all the different results and save them in the figures folder
 
 # load the results
-base_results_folder = os.path.abspath(".")
+base_results_folder = os.path.abspath("")
 os.makedirs(os.path.join(base_results_folder, 'figures'), exist_ok=True)
 plot_dilation = True
 
