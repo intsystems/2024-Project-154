@@ -126,3 +126,4 @@ logs/
 /code/testing_embeddings.py
 /proposed_model/
 /code/baseline_tensorflow/
+/code/predictions/
