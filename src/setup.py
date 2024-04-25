@@ -2,7 +2,7 @@ import io
 import re
 from setuptools import setup, find_packages
 
-from mylib import __version__
+from eeg_to_audio import __version__
 
 def read(file_path):
     with io.open(file_path, 'r', encoding='utf-8') as f:
@@ -19,14 +19,14 @@ requirements = '\n'.join(
 
 setup(
     # metadata
-    name='mylib',
+    name='eeg_to_audio',
     version=__version__,
     license='MIT',
-    author='Andrey Grabovoy',
-    author_email="grabovoy.av@phystech.edu",
-    description='mylib, python package',
+    author='Muhammadsharif Nabiev',
+    author_email="nabiev.mf@phystech.edu",
+    description='eeg_to_audio, python package',
     long_description=readme,
-    url='https://github.com/Intelligent-Systems-Phystech/ProjectTemplate',
+    url='https://github.com/intsystems/2024-Project-154',
 
     # options
     packages=find_packages(),
