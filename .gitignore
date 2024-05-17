@@ -127,3 +127,5 @@ logs/
 /proposed_model/
 /code/baseline_tensorflow/
 /code/predictions/
+/code/main_copy.ipynb
+/code/Results analysis.ipynb
