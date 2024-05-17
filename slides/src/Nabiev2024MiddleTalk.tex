@@ -1,0 +1,172 @@
+\documentclass{beamer}
+\beamertemplatenavigationsymbolsempty
+\usecolortheme{beaver}
+\setbeamertemplate{blocks}[rounded=true, shadow=true]
+\setbeamertemplate{footline}[page number]
+%
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{amssymb,amsfonts,amsmath,mathtext}
+\usepackage{subfig}
+\usepackage[all]{xy} % xy package for diagrams
+\usepackage{array}
+\usepackage{multicol}% many columns in slide
+\usepackage{hyperref}% urls
+\usepackage{hhline}%tables
+\usepackage{natbib}
+\usepackage{natbib}
+\usepackage{doi}
+\usepackage{mathtools}
+% Your figures are here:
+\graphicspath{ {fig/} {../fig/} }
+
+%----------------------------------------------------------------------------------------------------------
+\title[\hbox to 56mm{Декодирование мозговых сигналов}]{Декодирование мозговых сигналов в аудиоданные}
+\author[М.\,Ф. Набиев]{Набиев Мухаммадшариф Фуркатович}
+\institute{Московский физико-технический институт}
+\date{\footnotesize
+\par\smallskip\emph{Курс:} Моя первая научная статья\par (практика, В.\,В.~Стрижов)
+\par\smallskip\emph{Эксперт:} аспирант П.\,А.~Северилов
+\par\bigskip\small 2024}
+%----------------------------------------------------------------------------------------------------------
+\begin{document}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}
+\thispagestyle{empty}
+\maketitle
+\end{frame}
+%-----------------------------------------------------------------------------------------------------
+\begin{frame}{Цель исследования}
+%\begin{block}{Решается задача}
+%\end{block}
+\textbf{Цель:} Исследовать влияние физико-информированных энкодеров на качество декодирвование мозговых сигналов в аудиоданные. \\
+\textbf{Задача:} Решить задачу декодирования в постановке классификации, а именно определить, какой сегмент аудио вызвал конкретную мозговую активность.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.75\textwidth]{task_matchmismatch.png}
+\end{figure}
+\end{frame}
+%-----------------------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Постановка задачи}
+\textbf{Данные:} Кортеж $(\mathbf{X}^i, \mathbf{s}_1^i, \dots, \mathbf{s}_K^i)$, где $\mathbf{X}^i \in \mathbb{R}^{64 \times T}$~--- ЭЭГ-сигнал с 64 каналами, $\mathbf{s}_1^i, \dots, \mathbf{s}_K^i \in \mathbb{R}^{T}$--- стимулы, а $K$~--- количество стимулов. Меткой данного объекта будет являться вектор $\mathbf{y}^i \in \{0, 1\}^K$. Только один стимул является истинным. \bigskip
+
+Требуется по имеющимся $\mathbf{X}^i, \mathbf{s}_1^i, \dots, \mathbf{s}_K^i$ получить распределение вероятностей стимулов $\mathbf{p}^i = [p_1^i, \dots , p_K^i]^T$. Пусть модель представляет собой следующее отображение $\mathbf{f} : \mathbb{R}^{64 \times T} \times \left( \mathbb{R}^{T} \right)^K \rightarrow [0, 1]^K$. Задача сводится к минимизации кросс-энтропии:
+    $$CE = - \frac{1}{N}\sum_{i=1}^N\sum_{k=1}^K y_k^i \log \left( \left[ \mathbf{f}(\mathbf{X}^i, \mathbf{S}^i) \right]_k \right),$$
+    где $\mathbf{S}^i = (\mathbf{s}^i_1, \dots, \mathbf{s}^i_K)$. То есть решается задача мультиклассовой классификации.
+
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Архитектура решения}
+% \includegraphics[width=0.90\textwidth]{model_architecture.png}
+\begin{figure}[t]
+        \centering
+        \includegraphics[width=1\textwidth]{model_architecture.png}
+\end{figure}
+\begin{columns}[c]
+\column{0.5\textwidth}
+     \textbf{Базовое решение:} Расширенная CNN ~--- энкодер, который переводит ЭЭГ и стимулы в латентные пространства, где считается их близость (см.~\citep{Accou2021ModelingTR}).
+\column{0.5\textwidth}
+     \textbf{Предлагаемые улучшения:}
+     Для ЭЭГ заменить CNN на трансформер и использовать физико-информированный энкодер для стимула (см.~\citep{multihead-gru},~\citep{Wang2024SelfsupervisedSR}). 
+\end{columns}
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Данные для эксперимента}
+Эксперимент будет проверяться на данных SparrKULee (см.~\citep{K3VSND_2023}).
+\begin{itemize}
+     \item \textbf{Участники:} 85 участников.
+    \item \textbf{Стимулы:} 6-10 аудиофрагментов разной категории, такие как аудиокниги и подкасты, каждый длительностью  $\approx15$ минут.
+\end{itemize}
+\bigskip
+После обработки, частота дискретизации всех данных была понижена до 64 Гц.
+% \begin{figure}
+%     \centering
+%     \includegraphics[width=0.5\textwidth]{envelope_example.png}
+%     \caption{Пример огибающей сигнала}
+% \end{figure}
+\end{frame}
+
+\begin{frame}{Подготовка данных}
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.8\textwidth]{alignment.png}
+\end{figure}
+Пусть стимул обозначает сегмент аудиофрагмента. ЭЭГ и соответствующий аудиофрагмент делятся на сегменты фиксированной длины и для каждой пары (ЭЭГ, стимул) генерируются ложные стимулы.
+\end{frame}
+
+\begin{frame}{Вычислительный эксперимент}
+\begin{columns}[c]
+\column{0.5\textwidth}
+\begin{figure}
+    \includegraphics[width=1\textwidth]{sample.png}
+    \caption{Выборка, которая использовалась для эксперимента}
+\end{figure}
+\column{0.5\textwidth}
+Эксперимент проводился на подвыборке данных. Были отобраны 22 участника и аудиофрагменты, которые они слушали, а также их записи ЭЭГ. \\
+Для эксперимента были взяты следующие параметры: 
+\begin{itemize}
+    \item Размер окна - 5 секунд
+    \item Шаг окна - 1 секунда 
+    \item Количество ложных стимулов - 4
+\end{itemize}
+После разбиения по окнам и генерации ложных стимулов получилось 612500 кортежей.
+\end{columns}
+
+\end{frame}
+
+
+\begin{frame}{Результаты эксперимента}
+Обозначим множество классов, как $\{0, \dots, K-1\}$. Учитывая это, метрика качества вычисляется по формуле
+$$
+    Score = \frac{1}{22} \sum_{i=1}^{22} \frac{1}{l_i} \sum_{j=1}^{l_i} \left[ y^i_j = pred^i_j\right],
+$$
+где $y^i_j \in \{0, \dots, K-1\}$~--- метка объекта, $l_i$~--- количество пар ЭЭГ-стимул для $i$-го участника, а $pred^i_j$~--- предсказание модели на объекте $j$.
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|} \hline 
+        Model & Score (\%) \\ \hline
+        Baseline & 99.08 $\pm$ 0.27 \\ 
+        Transformer Encoder & \textbf{99.95} $\pm$ 0.04 \\ 
+        Wav2Vec2 & 99.43 $\pm$ 0.39 \\   
+        Whisper-small & 83.31 $\pm$ 4.37 \\   
+        Transformer Encoder + Wav2Vec2 & 99.78 $\pm$ 0.16 \\ 
+        Transformer Encoder + Whisper-small & 95.44 $\pm$ 2.50\\ \hline
+    \end{tabular}
+    \label{results}
+\end{table}
+
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+% \begin{frame}{Дальнейшие планы}
+%     \begin{itemize}
+%         \item Добавить энкодеры для стимулов: conformer, whisper, wav2vec
+%         \item
+%     \end{itemize}
+% \end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Источники}
+    \bibliographystyle{plain}
+    \bibliography{Nabiev2024SignalToAudio}
+\end{frame}
+\end{document} 
+%-----------------------------------------------------------------------------------------------------
+
+
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{���������� ������}
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{�������}
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{�������������� �����������}
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{����������}
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\end{document} 
