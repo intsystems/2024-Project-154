@@ -9,7 +9,7 @@ def read(file_path):
         return f.read()
 
 
-readme = read('README.md')
+readme = read('README.rst')
 # вычищаем локальные версии из файла requirements (согласно PEP440)
 requirements = '\n'.join(
     re.findall(r'^([^\s^+]+).*$',
